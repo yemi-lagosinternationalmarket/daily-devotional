@@ -2,10 +2,30 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE input_type AS ENUM ('topic', 'mood', 'combined', 'free_text', 'blessed');
 CREATE TYPE journal_step AS ENUM ('observe', 'apply');
-CREATE TYPE vibe_type AS ENUM ('praise', 'worship', 'instrumental');
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE user_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  llm_base_url TEXT DEFAULT 'https://api.openai.com/v1',
+  llm_api_key TEXT,
+  llm_model TEXT DEFAULT 'gpt-4o',
+  bible_translation TEXT DEFAULT 'ESV',
+  default_vibe TEXT DEFAULT 'worship',
+  theme TEXT DEFAULT 'dark',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE devotionals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   topic TEXT,
   mood TEXT,
@@ -28,19 +48,14 @@ CREATE TABLE devotionals (
 
 CREATE TABLE journal_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   devotional_id UUID NOT NULL REFERENCES devotionals(id) ON DELETE CASCADE,
   step journal_step NOT NULL,
   response_text TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE worship_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  spotify_connected BOOLEAN NOT NULL DEFAULT false,
-  spotify_refresh_token TEXT,
-  default_vibe vibe_type NOT NULL DEFAULT 'worship',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_devotionals_date ON devotionals(date DESC);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_devotionals_user_date ON devotionals(user_id, date DESC);
+CREATE INDEX idx_journal_user ON journal_entries(user_id);
 CREATE INDEX idx_journal_devotional ON journal_entries(devotional_id);

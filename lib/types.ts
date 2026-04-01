@@ -52,3 +52,22 @@ export interface DevotionalGenerationResult {
   pray_text: string;
   key_verse: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;
+}
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  llm_base_url: string;
+  llm_api_key: string | null;
+  llm_model: string;
+  bible_translation: string;
+  default_vibe: string;
+  theme: string;
+  updated_at: string;
+}
