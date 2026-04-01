@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Daily Devotional
 
-## Getting Started
+A guided daily Bible study app built for ADHD minds. AI-generated devotionals with worship music, step-by-step scripture study, and zero-shame design.
 
-First, run the development server:
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-name/daily-devotional.git
+cd daily-devotional
+cp .env.example .env
+# Edit .env — set NEXTAUTH_SECRET to any random string
+docker compose up -d
+# Open http://localhost:3000, register, then go to Settings to add your API key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### AI Provider (Required)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+After registering, go to **Settings** and configure your AI provider. The app works with any OpenAI-compatible API:
 
-## Learn More
+| Provider | Base URL | Model |
+|----------|----------|-------|
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o` |
+| Anthropic (via proxy) | Your proxy URL | `claude-sonnet-4-6` |
+| Ollama | `http://host.docker.internal:11434/v1` | `llama3` |
+| LiteLLM | `http://host.docker.internal:4000/v1` | Your model |
 
-To learn more about Next.js, take a look at the following resources:
+Each user brings their own API key.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### System-Level Default (Optional)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To set a default AI provider for all users, add to your `.env`:
 
-## Deploy on Vercel
+```bash
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-...
+AI_MODEL=gpt-4o
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Development
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose up db -d
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+## Tech Stack
+
+- **Next.js** (App Router)
+- **PostgreSQL** (Docker)
+- **NextAuth.js** (email/password auth)
+- **OpenAI SDK** (compatible with any provider)
+- **Tailwind CSS**
+
+## How It Works
+
+1. **Welcome** — Pick a topic, mood, or let God choose
+2. **Worship** — Listen to music while the AI prepares your devotional
+3. **Read** — Scripture passage with optional full chapter
+4. **Observe** — Guided question about the text
+5. **Reflect** — AI-generated teaching
+6. **Apply** — One concrete action step (under 10 minutes)
+7. **Pray** — Personalized prayer
+8. **Complete** — "Well done. You showed up today."
+
+## Design Philosophy
+
+- One thing on screen at a time
+- Every text box is optional
+- No streaks, no guilt
+- Completion is sacred
+
+## License
+
+MIT
