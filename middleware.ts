@@ -1,8 +1,8 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export default auth((req) => {
-  const isAuth = !!req.auth;
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("authjs.session-token") || req.cookies.get("__Secure-authjs.session-token");
+  const isAuth = !!token;
   const isAuthPage = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/register");
   const isApi = req.nextUrl.pathname.startsWith("/api");
   const isAuthApi = req.nextUrl.pathname.startsWith("/api/auth") || req.nextUrl.pathname.startsWith("/api/register");
@@ -23,7 +23,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
