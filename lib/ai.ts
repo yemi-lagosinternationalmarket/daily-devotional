@@ -1,42 +1,56 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { DevotionalGenerationRequest, DevotionalGenerationResult } from "./types";
+import type { UserSettings } from "./types";
 
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) {
-    _client = new Anthropic();
-  }
-  return _client;
+function createClient(settings: UserSettings | null): { client: OpenAI; model: string } {
+  const baseURL = settings?.llm_base_url || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const apiKey = settings?.llm_api_key || process.env.OPENAI_API_KEY || "";
+  const model = settings?.llm_model || process.env.AI_MODEL || "gpt-4o";
+
+  return {
+    client: new OpenAI({ baseURL, apiKey }),
+    model,
+  };
 }
 
-const SYSTEM_PROMPT = `You are a Bible study guide creating a personalized daily devotional. You are warm, direct, and real — like a mentor who knows the Bible deeply but talks like a normal person.
+const SYSTEM_PROMPT = `You are a Bible study guide creating a personalized daily devotional using the modified SOAP + inductive study method. You are warm, direct, and real — like a mentor who knows the Bible deeply but talks like a normal person.
 
 Your output must be a single JSON object with these exact fields:
-- scripture_ref: The passage reference (e.g., "Philippians 4:6-7")
+- scripture_ref: The passage reference (e.g., "Philippians 4:6-7"). Select 2-6 specific verses. Prefer passages where God speaks directly, makes a promise, or reveals character. Vary across OT, NT, Psalms, Prophets, Epistles, Gospels.
 - scripture_text: The full passage text
 - scripture_translation: The translation used (NIV or ESV)
-- full_chapter_text: The full chapter containing the passage
-- observe_question: One focused question about what the passage says
-- reflect_content: A multi-paragraph teaching/commentary (4-6 short paragraphs, 2-3 sentences each)
-- apply_action: One concrete action step (specific, doable in under 10 minutes)
+- full_chapter_text: 10-15 surrounding verses for context (NOT the whole chapter — keep under 300 words)
+- observe_question: One focused question about what the text SAYS (not what it means). Guide the reader to notice: Who is speaking? What action or promise is stated? What word is repeated?
+- reflect_content: 4-6 short paragraphs of teaching (see structure below)
+- apply_action: One concrete action step, specific and doable in under 10 minutes, needing no extra tools
 - apply_time_estimate: How long the action takes (e.g., "~5 minutes")
-- pray_text: A closing prayer written in first person
+- pray_text: A closing prayer, 60-100 words (see prayer rules below)
 - key_verse: The single most important verse from the passage
 
-Guidelines for reflect_content:
-- Write like a mentor, not a professor
-- Short paragraphs (2-3 sentences max each)
-- No Christianese ("washed in the blood", "hedge of protection") unless explaining it
-- Real examples, modern language
-- Be direct, even blunt — the reader has ADHD and tunes out fluff
-- Reference well-known voices (Tim Keller, C.S. Lewis, Spurgeon, Priscilla Shirer, A.W. Tozer) where it adds depth
-- Include historical or cultural context where it illuminates the passage
+## Reflect/Teach Structure (follow Tim Keller's pattern: human problem → gospel reframe)
+1. Context hook — Set the scene. Who wrote this? What was happening?
+2. The insight — What does this reveal that isn't obvious? Historical context, word studies.
+3. The reframe — How does this challenge default thinking? Be direct: "You think X, but this says Y."
+4. The connection — Reference a known voice with SUBSTANCE (Keller, Lewis, Spurgeon, Tozer, Shirer, Dallas Willard). Use actual quotes or paraphrases, not name-drops.
+5. The landing — Bring it home to the user's specific situation/mood.
 
-Guidelines for pray_text:
-- First person, as if the reader is talking to God
-- Conversational and honest, not performative
-- Real language, not King James English
-- End with "Amen."
+Rules: 2-3 sentences max per paragraph. No Christianese unless explaining it. Be direct, even blunt — the reader has ADHD. Use modern analogies: deadlines, phones, 2am anxiety, scrolling, burnout.
+
+## Prayer Rules (praying scripture back to God)
+1. Name God in context of this passage (not "Dear Lord" — be specific to what the passage reveals)
+2. Be honest about the struggle ("I keep trying to..." or "I'm tired of...")
+3. Echo the passage ("You said Your peace would guard my heart. I need that.")
+4. Ask for one specific thing connected to the teaching
+5. End with "Amen."
+Voice: first person, conversational, short sentences. OK to say "I don't fully believe this yet."
+Mood adjustments: Anxious = sit in tension before peace. Tired = fewer words. Hurting = lament is OK. Grateful = let it flow.
+
+## Apply Step Rules
+Must be completable in under 10 minutes. Must be specific enough the reader knows EXACTLY what to do. Examples:
+- "Set a 5-minute timer. Write one thing you're anxious about, then one thing you're thankful for about that same situation."
+- "Text someone you've been meaning to encourage. Just one sentence."
+- "Read this passage out loud three times. Slowly."
+BAD: "Spend time in prayer this week" (too vague). "Journal about your feelings" (no structure).
 
 Output ONLY the JSON object. No markdown, no code fences, no explanation.`;
 
@@ -67,8 +81,69 @@ export function buildDevotionalPrompt(req: DevotionalGenerationRequest): string 
 }
 
 export function parseDevotionalResponse(text: string): DevotionalGenerationResult {
-  const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-  const parsed = JSON.parse(cleaned);
+  // Strip all LiteLLM model prefixes like [gpt-5.4] anywhere in text
+  let cleaned = text
+    .replace(/\[gpt-[^\]]*\]\n?/g, "")
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
+
+  // Find the JSON object — locate the first { and its matching }
+  let braceDepth = 0;
+  let start = -1;
+  let end = -1;
+  for (let i = 0; i < cleaned.length; i++) {
+    if (cleaned[i] === "{") {
+      if (braceDepth === 0) start = i;
+      braceDepth++;
+    } else if (cleaned[i] === "}") {
+      braceDepth--;
+      if (braceDepth === 0 && start >= 0) {
+        end = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (start < 0 || end < 0) {
+    throw new Error(`No JSON object found in response (length=${cleaned.length})`);
+  }
+
+  let jsonStr = cleaned.slice(start, end);
+
+  // Fix unescaped newlines/tabs inside JSON string values
+  let fixed = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < jsonStr.length; i++) {
+    const ch = jsonStr[i];
+    if (escaped) {
+      fixed += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      fixed += ch;
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      fixed += ch;
+      continue;
+    }
+    if (inString && ch === "\n") {
+      fixed += "\\n";
+      continue;
+    }
+    if (inString && ch === "\t") {
+      fixed += "\\t";
+      continue;
+    }
+    fixed += ch;
+  }
+
+  const parsed = JSON.parse(fixed);
 
   const required = [
     "scripture_ref", "scripture_text", "scripture_translation",
@@ -86,17 +161,74 @@ export function parseDevotionalResponse(text: string): DevotionalGenerationResul
 }
 
 export async function generateDevotional(
-  req: DevotionalGenerationRequest
+  req: DevotionalGenerationRequest,
+  settings: UserSettings | null,
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
+  const { client, model } = createClient(settings);
 
-  const response = await getClient().messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
+  const response = await client.chat.completions.create({
+    model,
+    max_tokens: 16384,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
   });
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const text = response.choices[0]?.message?.content || "";
   return parseDevotionalResponse(text);
+}
+
+// Field keys in the order Claude typically writes them
+const FIELD_LABELS: Record<string, string> = {
+  scripture_ref: "Selecting a passage",
+  scripture_text: "Reading the scripture",
+  scripture_translation: "Reading the scripture",
+  full_chapter_text: "Pulling the full chapter",
+  observe_question: "Crafting a question for you",
+  reflect_content: "Writing the teaching",
+  apply_action: "Finding a step you can take today",
+  apply_time_estimate: "Finding a step you can take today",
+  pray_text: "Writing a prayer",
+  key_verse: "Choosing your key verse",
+};
+
+export async function generateDevotionalStreaming(
+  req: DevotionalGenerationRequest,
+  settings: UserSettings | null,
+  onStatus: (status: string) => void,
+): Promise<DevotionalGenerationResult> {
+  const userPrompt = buildDevotionalPrompt(req);
+  const { client, model } = createClient(settings);
+
+  onStatus("Thinking about what you need to hear...");
+
+  const stream = await client.chat.completions.create({
+    model,
+    max_tokens: 16384,
+    stream: true,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
+  });
+
+  let fullText = "";
+  const seenKeys = new Set<string>();
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content || "";
+    fullText += delta;
+
+    for (const key of Object.keys(FIELD_LABELS)) {
+      if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
+        seenKeys.add(key);
+        onStatus(FIELD_LABELS[key]);
+      }
+    }
+  }
+
+  onStatus("Saving your devotional...");
+  return parseDevotionalResponse(fullText);
 }
