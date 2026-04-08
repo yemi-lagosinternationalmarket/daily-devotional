@@ -177,6 +177,7 @@ export async function generateDevotional(
   const response = await client.chat.completions.create({
     model,
     max_tokens: 16384,
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
@@ -215,6 +216,7 @@ export async function generateDevotionalStreaming(
     model,
     max_tokens: 16384,
     stream: true,
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
