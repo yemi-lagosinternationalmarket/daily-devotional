@@ -11,7 +11,6 @@ import { StepReflect } from "@/components/step-reflect";
 import { StepApply } from "@/components/step-apply";
 import { StepPray } from "@/components/step-pray";
 import { StepComplete } from "@/components/step-complete";
-import { AmbientPlayer } from "@/components/ambient-player";
 
 function DevotionalContent() {
   const router = useRouter();
@@ -53,15 +52,8 @@ function DevotionalContent() {
 
   const totalSteps = 5;
 
-  // Ambient plays during Read (0) through Apply (3), quieter during Pray (4), off on Complete (5)
-  const ambientActive = step >= 0 && step <= 3;
-  const ambientVolume = step === 3 ? 10 : 15;
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center py-16">
-      {/* Ambient background music */}
-      <AmbientPlayer active={ambientActive} volume={ambientVolume} />
-
       {step < totalSteps && (
         <StepIndicator total={totalSteps} current={step} onGoTo={setStep} />
       )}
