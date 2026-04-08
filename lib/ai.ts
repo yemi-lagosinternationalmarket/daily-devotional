@@ -207,34 +207,45 @@ export async function generateDevotionalStreaming(
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
   const { client, model } = getAnthropicClient();
+  const MAX_RETRIES = 4;
 
-  onStatus("Thinking about what you need to hear...");
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    onStatus(attempt === 1 ? "Thinking about what you need to hear..." : "Trying again...");
 
-  const stream = client.messages.stream({
-    model,
-    max_tokens: 16384,
-    system: SYSTEM_PROMPT,
-    messages: [
-      { role: "user", content: userPrompt },
-    ],
-  });
+    try {
+      const stream = client.messages.stream({
+        model,
+        max_tokens: 16384,
+        system: SYSTEM_PROMPT,
+        messages: [
+          { role: "user", content: userPrompt },
+        ],
+      });
 
-  let fullText = "";
-  const seenKeys = new Set<string>();
+      let fullText = "";
+      const seenKeys = new Set<string>();
 
-  stream.on("text", (text) => {
-    fullText += text;
+      stream.on("text", (text) => {
+        fullText += text;
 
-    for (const key of Object.keys(FIELD_LABELS)) {
-      if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
-        seenKeys.add(key);
-        onStatus(FIELD_LABELS[key]);
-      }
+        for (const key of Object.keys(FIELD_LABELS)) {
+          if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
+            seenKeys.add(key);
+            onStatus(FIELD_LABELS[key]);
+          }
+        }
+      });
+
+      await stream.finalMessage();
+
+      onStatus("Saving your devotional...");
+      return parseDevotionalResponse(fullText);
+    } catch (err: unknown) {
+      const isContentFilter = err instanceof Error && err.message.includes("content filtering");
+      if (isContentFilter && attempt < MAX_RETRIES) continue;
+      throw err;
     }
-  });
+  }
 
-  await stream.finalMessage();
-
-  onStatus("Saving your devotional...");
-  return parseDevotionalResponse(fullText);
+  throw new Error("Generation failed after retries");
 }
