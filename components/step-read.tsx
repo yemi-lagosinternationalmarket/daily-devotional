@@ -3,6 +3,20 @@
 import { useState } from "react";
 import type { Devotional } from "@/lib/types";
 
+interface BibleVerse {
+  verse: number;
+  text: string;
+}
+
+function parseChapterRef(scriptureRef: string): string | null {
+  // "Philippians 4:6-7" → "Philippians 4"
+  // "1 John 3:16" → "1 John 3"
+  // "Psalm 23:1-6" → "Psalm 23"
+  const match = scriptureRef.match(/^(.+?)\s+(\d+):\d+/);
+  if (match) return `${match[1]} ${match[2]}`;
+  return null;
+}
+
 interface StepReadProps {
   devotional: Devotional;
   onNext: () => void;
@@ -10,6 +24,35 @@ interface StepReadProps {
 
 export function StepRead({ devotional, onNext }: StepReadProps) {
   const [showFullChapter, setShowFullChapter] = useState(false);
+  const [chapterVerses, setChapterVerses] = useState<BibleVerse[] | null>(null);
+  const [chapterTitle, setChapterTitle] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function loadChapter() {
+    const ref = parseChapterRef(devotional.scripture_ref);
+    if (!ref) {
+      setShowFullChapter(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const encoded = encodeURIComponent(ref);
+      const res = await fetch(`https://bible-api.com/${encoded}?translation=web`);
+      const data = await res.json();
+      if (data.verses && data.verses.length > 0) {
+        setChapterVerses(data.verses.map((v: { verse: number; text: string }) => ({
+          verse: v.verse,
+          text: v.text.trim(),
+        })));
+        setChapterTitle(data.reference || ref);
+      }
+    } catch {
+      // Fallback to LLM text
+    }
+    setShowFullChapter(true);
+    setLoading(false);
+  }
 
   return (
     <div className="max-w-[640px] mx-auto px-8">
@@ -30,20 +73,38 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
         {devotional.scripture_ref} {devotional.scripture_translation}
       </p>
 
-      {devotional.full_chapter_text && !showFullChapter && (
+      {!showFullChapter && (
         <button
-          onClick={() => setShowFullChapter(true)}
+          onClick={loadChapter}
+          disabled={loading}
           className="text-[13px] text-[var(--text-faint)] hover:text-[var(--text-ghost)] transition-colors cursor-pointer mb-8"
         >
-          Read full chapter →
+          {loading ? "Loading chapter..." : "Read full chapter →"}
         </button>
       )}
 
-      {showFullChapter && devotional.full_chapter_text && (
+      {showFullChapter && (
         <div className="mt-4 mb-8 p-6 rounded-xl bg-[var(--surface)] border border-[var(--surface-border)]">
-          <p className="text-sm text-[var(--text-tertiary)] leading-[1.8] whitespace-pre-wrap">
-            {devotional.full_chapter_text}
-          </p>
+          {chapterTitle && (
+            <p className="text-[12px] font-semibold text-[var(--text-ghost)] tracking-[1px] uppercase mb-4">
+              {chapterTitle}
+              <span className="ml-2 font-normal normal-case tracking-normal text-[var(--text-faint)]">WEB</span>
+            </p>
+          )}
+          {chapterVerses ? (
+            <div className="flex flex-col gap-1">
+              {chapterVerses.map((v) => (
+                <p key={v.verse} className="text-sm text-[var(--text-tertiary)] leading-[1.8]">
+                  <span className="text-[10px] text-[var(--text-faint)] mr-1.5 align-super">{v.verse}</span>
+                  {v.text}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-tertiary)] leading-[1.8] whitespace-pre-wrap">
+              {devotional.full_chapter_text}
+            </p>
+          )}
           <button
             onClick={() => setShowFullChapter(false)}
             className="text-[12px] text-[var(--text-faint)] hover:text-[var(--text-ghost)] mt-4 cursor-pointer"
