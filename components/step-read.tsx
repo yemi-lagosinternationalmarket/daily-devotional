@@ -8,13 +8,46 @@ interface BibleVerse {
   text: string;
 }
 
-function parseChapterRef(scriptureRef: string): string | null {
-  // "Philippians 4:6-7" → "Philippians 4"
-  // "1 John 3:16" → "1 John 3"
-  // "Psalm 23:1-6" → "Psalm 23"
+// Map book names to helloao.org book IDs
+const BOOK_IDS: Record<string, string> = {
+  "genesis": "GEN", "exodus": "EXO", "leviticus": "LEV", "numbers": "NUM",
+  "deuteronomy": "DEU", "joshua": "JOS", "judges": "JDG", "ruth": "RUT",
+  "1 samuel": "1SA", "2 samuel": "2SA", "1 kings": "1KI", "2 kings": "2KI",
+  "1 chronicles": "1CH", "2 chronicles": "2CH", "ezra": "EZR", "nehemiah": "NEH",
+  "esther": "EST", "job": "JOB", "psalm": "PSA", "psalms": "PSA",
+  "proverbs": "PRO", "ecclesiastes": "ECC", "song of solomon": "SNG",
+  "isaiah": "ISA", "jeremiah": "JER", "lamentations": "LAM", "ezekiel": "EZK",
+  "daniel": "DAN", "hosea": "HOS", "joel": "JOL", "amos": "AMO",
+  "obadiah": "OBA", "jonah": "JON", "micah": "MIC", "nahum": "NAM",
+  "habakkuk": "HAB", "zephaniah": "ZEP", "haggai": "HAG", "zechariah": "ZEC",
+  "malachi": "MAL", "matthew": "MAT", "mark": "MRK", "luke": "LUK",
+  "john": "JHN", "acts": "ACT", "romans": "ROM", "1 corinthians": "1CO",
+  "2 corinthians": "2CO", "galatians": "GAL", "ephesians": "EPH",
+  "philippians": "PHP", "colossians": "COL", "1 thessalonians": "1TH",
+  "2 thessalonians": "2TH", "1 timothy": "1TI", "2 timothy": "2TI",
+  "titus": "TIT", "philemon": "PHM", "hebrews": "HEB", "james": "JAS",
+  "1 peter": "1PE", "2 peter": "2PE", "1 john": "1JN", "2 john": "2JN",
+  "3 john": "3JN", "jude": "JUD", "revelation": "REV",
+};
+
+function parseChapterRef(scriptureRef: string): { book: string; chapter: number } | null {
   const match = scriptureRef.match(/^(.+?)\s+(\d+):\d+/);
-  if (match) return `${match[1]} ${match[2]}`;
-  return null;
+  if (!match) return null;
+  const bookName = match[1].toLowerCase().trim();
+  const bookId = BOOK_IDS[bookName];
+  if (!bookId) return null;
+  return { book: bookId, chapter: parseInt(match[2]) };
+}
+
+function extractVerseText(content: unknown[]): string {
+  return content
+    .map((c) => {
+      if (typeof c === "string") return c;
+      if (typeof c === "object" && c !== null && "text" in c) return (c as { text: string }).text;
+      return "";
+    })
+    .join("")
+    .trim();
 }
 
 interface StepReadProps {
@@ -26,26 +59,47 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
   const [showFullChapter, setShowFullChapter] = useState(false);
   const [chapterVerses, setChapterVerses] = useState<BibleVerse[] | null>(null);
   const [chapterTitle, setChapterTitle] = useState<string | null>(null);
+  const [translationLabel, setTranslationLabel] = useState<string>("");
 
   // Prefetch chapter on mount
   useEffect(() => {
-    const ref = parseChapterRef(devotional.scripture_ref);
-    if (!ref) return;
+    const parsed = parseChapterRef(devotional.scripture_ref);
+    if (!parsed) return;
 
-    const encoded = encodeURIComponent(ref);
-    fetch(`https://bible-api.com/${encoded}?translation=web`)
+    const translationId = devotional.scripture_translation === "KJV" ? "eng_kjv" : "BSB";
+    const label = translationId === "eng_kjv" ? "KJV" : "BSB";
+
+    fetch(`https://bible.helloao.org/api/${translationId}/${parsed.book}/${parsed.chapter}.json`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.verses && data.verses.length > 0) {
-          setChapterVerses(data.verses.map((v: { verse: number; text: string }) => ({
-            verse: v.verse,
-            text: v.text.trim(),
-          })));
-          setChapterTitle(data.reference || ref);
+        const content = data?.chapter?.content;
+        if (!content) return;
+
+        const verses: BibleVerse[] = [];
+        let heading = "";
+
+        for (const item of content) {
+          if (item.type === "heading" && !heading) {
+            heading = item.content?.join("") || "";
+          }
+          if (item.type === "verse") {
+            verses.push({
+              verse: item.number,
+              text: extractVerseText(item.content),
+            });
+          }
+        }
+
+        if (verses.length > 0) {
+          const bookMatch = devotional.scripture_ref.match(/^(.+?)\s+(\d+):/);
+          const title = bookMatch ? `${bookMatch[1]} ${bookMatch[2]}` : heading;
+          setChapterVerses(verses);
+          setChapterTitle(title);
+          setTranslationLabel(label);
         }
       })
       .catch(() => {});
-  }, [devotional.scripture_ref]);
+  }, [devotional.scripture_ref, devotional.scripture_translation]);
 
   return (
     <div className="max-w-[640px] mx-auto px-8">
@@ -80,7 +134,9 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
           {chapterTitle && (
             <p className="text-[12px] font-semibold text-[var(--text-ghost)] tracking-[1px] uppercase mb-4">
               {chapterTitle}
-              <span className="ml-2 font-normal normal-case tracking-normal text-[var(--text-faint)]">WEB</span>
+              {translationLabel && (
+                <span className="ml-2 font-normal normal-case tracking-normal text-[var(--text-faint)]">{translationLabel}</span>
+              )}
             </p>
           )}
           {chapterVerses ? (
