@@ -53,11 +53,12 @@ export async function startSpotifyAuth(): Promise<void> {
     throw new Error("Spotify Client ID not configured");
   }
 
-  const codeVerifier = generateRandomString(64);
-  const hashed = await sha256(codeVerifier);
-  const codeChallenge = base64urlEncode(hashed);
+  // Generate PKCE verifier + challenge server-side
+  // (crypto.subtle isn't available in non-secure browser contexts)
+  const pkceRes = await fetch("/api/spotify/pkce");
+  const { verifier, challenge } = await pkceRes.json();
 
-  sessionStorage.setItem("spotify_code_verifier", codeVerifier);
+  sessionStorage.setItem("spotify_code_verifier", verifier);
 
   const params = new URLSearchParams({
     response_type: "code",
@@ -65,7 +66,7 @@ export async function startSpotifyAuth(): Promise<void> {
     scope: SCOPES,
     redirect_uri: getRedirectUri(),
     code_challenge_method: "S256",
-    code_challenge: codeChallenge,
+    code_challenge: challenge,
   });
 
   window.location.href = `https://accounts.spotify.com/authorize?${params}`;

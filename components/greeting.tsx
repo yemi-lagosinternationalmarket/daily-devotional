@@ -1,16 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 export function Greeting() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const now = new Date();
   const hour = now.getHours();
-  const greeting =
-    hour < 12 ? "Good morning." : hour < 17 ? "Good afternoon." : "Good evening.";
+  const greeting = !mounted
+    ? "\u00A0"
+    : hour < 12 ? "Good morning." : hour < 17 ? "Good afternoon." : "Good evening.";
 
-  const dateStr = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const dateStr = !mounted
+    ? "\u00A0"
+    : now.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
 
   return (
     <div className="text-center">

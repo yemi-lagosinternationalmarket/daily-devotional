@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
+import { MusicProvider } from "@/lib/music-context";
+import { MiniPlayer } from "@/components/mini-player";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <MusicProvider>
+            {children}
+            <MiniPlayer />
+          </MusicProvider>
+        </SessionProvider>
       </body>
     </html>
   );

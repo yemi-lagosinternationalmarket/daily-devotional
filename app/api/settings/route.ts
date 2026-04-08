@@ -8,7 +8,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const settings = await getUserSettings(session.user.id);
-  return NextResponse.json(settings);
+  return NextResponse.json({
+    ...settings,
+    has_system_key: !!process.env.OPENAI_API_KEY,
+  });
 }
 
 export async function PUT(request: NextRequest) {

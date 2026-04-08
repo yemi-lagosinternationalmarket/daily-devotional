@@ -3,9 +3,13 @@ import type { DevotionalGenerationRequest, DevotionalGenerationResult } from "./
 import type { UserSettings } from "./types";
 
 function createClient(settings: UserSettings | null): { client: OpenAI; model: string } {
-  const baseURL = settings?.llm_base_url || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const apiKey = settings?.llm_api_key || process.env.OPENAI_API_KEY || "";
-  const model = settings?.llm_model || process.env.AI_MODEL || "gpt-4o";
+  // Use user's personal settings ONLY if they have an API key configured.
+  // Otherwise fall through entirely to env vars (system-level config).
+  const hasPersonalKey = !!settings?.llm_api_key;
+
+  const baseURL = hasPersonalKey ? settings!.llm_base_url : (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1");
+  const apiKey = hasPersonalKey ? settings!.llm_api_key! : (process.env.OPENAI_API_KEY || "");
+  const model = hasPersonalKey ? settings!.llm_model : (process.env.AI_MODEL || "gpt-4o");
 
   return {
     client: new OpenAI({ baseURL, apiKey }),
@@ -154,6 +158,13 @@ export function parseDevotionalResponse(text: string): DevotionalGenerationResul
   for (const field of required) {
     if (!parsed[field]) {
       throw new Error(`Missing required field: ${field}`);
+    }
+  }
+
+  // Normalize array fields to strings (LLM sometimes returns paragraphs as arrays)
+  for (const field of ["reflect_content", "scripture_text", "full_chapter_text", "pray_text"]) {
+    if (Array.isArray(parsed[field])) {
+      parsed[field] = parsed[field].join("\n\n");
     }
   }
 

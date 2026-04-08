@@ -9,27 +9,86 @@ function WorshipContent() {
   const searchParams = useSearchParams();
   const [devotionalId, setDevotionalId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    const body = {
+      topic: searchParams.get("topic"),
+      mood: searchParams.get("mood"),
+      free_text: searchParams.get("free_text"),
+      input_type: searchParams.get("input_type") || "blessed",
+      is_want_more: searchParams.get("want_more") === "true",
+      parent_devotional_id: searchParams.get("parent_id"),
+    };
+
     async function generate() {
-      const body = {
-        topic: searchParams.get("topic"),
-        mood: searchParams.get("mood"),
-        free_text: searchParams.get("free_text"),
-        input_type: searchParams.get("input_type") || "blessed",
-        is_want_more: searchParams.get("want_more") === "true",
-        parent_devotional_id: searchParams.get("parent_id"),
-      };
+      try {
+        const res = await fetch("/api/devotional/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
 
-      const res = await fetch("/api/devotional/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+        if (!res.ok) {
+          setStatus("Something went wrong. Try again.");
+          setError(true);
+          return;
+        }
 
-      const data = await res.json();
-      setDevotionalId(data.id);
-      setIsReady(true);
+        const reader = res.body?.getReader();
+        if (!reader) {
+          setStatus("Something went wrong. Try again.");
+          setError(true);
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Split on double newline (SSE message boundary)
+          const messages = buffer.split("\n\n");
+          buffer = messages.pop() || "";
+
+          for (const msg of messages) {
+            const lines = msg.split("\n");
+            let eventType = "";
+            let data = "";
+
+            for (const line of lines) {
+              if (line.startsWith("event: ")) eventType = line.slice(7).trim();
+              else if (line.startsWith("data: ")) data = line.slice(6);
+            }
+
+            if (!data) continue;
+
+            if (eventType === "status") {
+              setStatus(data);
+            } else if (eventType === "done") {
+              try {
+                const devotional = JSON.parse(data);
+                setDevotionalId(devotional.id);
+                setIsReady(true);
+              } catch {
+                setStatus("Something went wrong. Try again.");
+                setError(true);
+              }
+            } else if (eventType === "error") {
+              setStatus("Something went wrong. Try again.");
+              setError(true);
+            }
+          }
+        }
+      } catch {
+        setStatus("Connection lost. Try again.");
+        setError(true);
+      }
     }
 
     generate();
@@ -41,7 +100,17 @@ function WorshipContent() {
     }
   }
 
-  return <WorshipScreen isReady={isReady} onReady={handleReady} />;
+  return (
+    <WorshipScreen
+      isReady={isReady}
+      onReady={handleReady}
+      onBack={() => router.push("/")}
+      status={status}
+      error={error}
+      topic={searchParams.get("topic")}
+      mood={searchParams.get("mood")}
+    />
+  );
 }
 
 export default function WorshipPage() {

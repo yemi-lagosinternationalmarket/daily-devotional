@@ -13,7 +13,7 @@ export default function Home() {
 
   useEffect(() => {
     fetch("/api/settings").then(r => r.json()).then(s => {
-      setHasApiKey(!!s?.llm_api_key);
+      setHasApiKey(!!s?.llm_api_key || !!s?.has_system_key);
     }).catch(() => {});
   }, []);
 
