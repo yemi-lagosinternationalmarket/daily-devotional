@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { insertDevotional, getRecentDevotionalRefs, getUserSettings } from "@/lib/queries";
-import { generateDevotional } from "@/lib/ai";
+import { generateDevotionalStreaming } from "@/lib/ai";
 import type { DevotionalGenerationRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -35,8 +35,6 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        send("status", "Thinking about what you need to hear...");
-
         const exclude_refs = await getRecentDevotionalRefs(userId);
 
         const req: DevotionalGenerationRequest = {
@@ -47,7 +45,9 @@ export async function POST(request: NextRequest) {
           exclude_refs,
         };
 
-        const result = await generateDevotional(req, settings);
+        const result = await generateDevotionalStreaming(req, settings, (status) => {
+          send("status", status);
+        });
 
         send("status", "Saving your devotional...");
 
