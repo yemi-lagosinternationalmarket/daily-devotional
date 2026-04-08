@@ -20,6 +20,12 @@ CREATE TABLE user_settings (
   bible_translation TEXT DEFAULT 'ESV',
   default_vibe TEXT DEFAULT 'worship',
   theme TEXT DEFAULT 'dark',
+  spotify_access_token TEXT,
+  spotify_refresh_token TEXT,
+  spotify_connected BOOLEAN DEFAULT false,
+  spotify_playlist_praise TEXT,
+  spotify_playlist_worship TEXT,
+  spotify_playlist_instrumental TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
