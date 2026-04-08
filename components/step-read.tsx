@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Devotional } from "@/lib/types";
 
 interface BibleVerse {
@@ -26,33 +26,26 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
   const [showFullChapter, setShowFullChapter] = useState(false);
   const [chapterVerses, setChapterVerses] = useState<BibleVerse[] | null>(null);
   const [chapterTitle, setChapterTitle] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function loadChapter() {
+  // Prefetch chapter on mount
+  useEffect(() => {
     const ref = parseChapterRef(devotional.scripture_ref);
-    if (!ref) {
-      setShowFullChapter(true);
-      return;
-    }
+    if (!ref) return;
 
-    setLoading(true);
-    try {
-      const encoded = encodeURIComponent(ref);
-      const res = await fetch(`https://bible-api.com/${encoded}?translation=web`);
-      const data = await res.json();
-      if (data.verses && data.verses.length > 0) {
-        setChapterVerses(data.verses.map((v: { verse: number; text: string }) => ({
-          verse: v.verse,
-          text: v.text.trim(),
-        })));
-        setChapterTitle(data.reference || ref);
-      }
-    } catch {
-      // Fallback to LLM text
-    }
-    setShowFullChapter(true);
-    setLoading(false);
-  }
+    const encoded = encodeURIComponent(ref);
+    fetch(`https://bible-api.com/${encoded}?translation=web`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.verses && data.verses.length > 0) {
+          setChapterVerses(data.verses.map((v: { verse: number; text: string }) => ({
+            verse: v.verse,
+            text: v.text.trim(),
+          })));
+          setChapterTitle(data.reference || ref);
+        }
+      })
+      .catch(() => {});
+  }, [devotional.scripture_ref]);
 
   return (
     <div className="max-w-[640px] mx-auto px-8">
@@ -75,11 +68,10 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
 
       {!showFullChapter && (
         <button
-          onClick={loadChapter}
-          disabled={loading}
+          onClick={() => setShowFullChapter(true)}
           className="text-[13px] text-[var(--text-faint)] hover:text-[var(--text-ghost)] transition-colors cursor-pointer mb-8"
         >
-          {loading ? "Loading chapter..." : "Read full chapter →"}
+          Read full chapter →
         </button>
       )}
 
