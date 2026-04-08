@@ -1,25 +1,13 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import type { DevotionalGenerationRequest, DevotionalGenerationResult } from "./types";
 import type { UserSettings } from "./types";
 
-function createClient(settings: UserSettings | null): { client: OpenAI; model: string } {
-  // Use user's personal settings ONLY if they have an API key configured.
-  // Otherwise fall through entirely to env vars (system-level config).
-  const hasPersonalKey = !!settings?.llm_api_key;
-
-  const baseURL = hasPersonalKey ? settings!.llm_base_url : (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1");
-  const apiKey = hasPersonalKey ? settings!.llm_api_key! : (process.env.OPENAI_API_KEY || "");
-  const model = hasPersonalKey ? settings!.llm_model : (process.env.AI_MODEL || "gpt-4o");
+function getAnthropicClient(): { client: Anthropic; model: string } {
+  const apiKey = process.env.ANTHROPIC_API_KEY || "";
+  const model = process.env.AI_MODEL || "claude-opus-4-6";
 
   return {
-    client: new OpenAI({
-      baseURL,
-      apiKey,
-      defaultHeaders: baseURL.includes("openrouter") ? {
-        "HTTP-Referer": "https://daily-devotional-nu.vercel.app",
-        "X-Title": "Daily Devotional",
-      } : undefined,
-    }),
+    client: new Anthropic({ apiKey }),
     model,
   };
 }
@@ -183,18 +171,18 @@ export async function generateDevotional(
   settings: UserSettings | null,
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
-  const { client, model } = createClient(settings);
+  const { client, model } = getAnthropicClient();
 
-  const response = await client.chat.completions.create({
+  const response = await client.messages.create({
     model,
     max_tokens: 16384,
+    system: SYSTEM_PROMPT,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
   });
 
-  const text = response.choices[0]?.message?.content || "";
+  const text = response.content[0]?.type === "text" ? response.content[0].text : "";
   return parseDevotionalResponse(text);
 }
 
@@ -218,16 +206,15 @@ export async function generateDevotionalStreaming(
   onStatus: (status: string) => void,
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
-  const { client, model } = createClient(settings);
+  const { client, model } = getAnthropicClient();
 
   onStatus("Thinking about what you need to hear...");
 
-  const stream = await client.chat.completions.create({
+  const stream = client.messages.stream({
     model,
     max_tokens: 16384,
-    stream: true,
+    system: SYSTEM_PROMPT,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
   });
@@ -235,9 +222,8 @@ export async function generateDevotionalStreaming(
   let fullText = "";
   const seenKeys = new Set<string>();
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content || "";
-    fullText += delta;
+  stream.on("text", (text) => {
+    fullText += text;
 
     for (const key of Object.keys(FIELD_LABELS)) {
       if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
@@ -245,7 +231,9 @@ export async function generateDevotionalStreaming(
         onStatus(FIELD_LABELS[key]);
       }
     }
-  }
+  });
+
+  await stream.finalMessage();
 
   onStatus("Saving your devotional...");
   return parseDevotionalResponse(fullText);

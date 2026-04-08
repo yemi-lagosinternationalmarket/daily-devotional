@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   const settings = await getUserSettings(userId);
 
-  if (!settings?.llm_api_key && !process.env.OPENAI_API_KEY) {
+  if (!settings?.llm_api_key && !process.env.ANTHROPIC_API_KEY) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
