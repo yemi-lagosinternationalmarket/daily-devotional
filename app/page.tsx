@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Greeting } from "@/components/greeting";
 import { VerseOfDay } from "@/components/verse-of-day";
+import { ProfileMenu } from "@/components/profile-menu";
 
 const SUGGESTIONS = [
   "I'm feeling anxious about today",
@@ -45,21 +46,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="fixed top-8 right-8 flex items-center gap-4 z-10">
-        <button
-          onClick={() => router.push("/history")}
-          className="text-[13px] text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
-        >
-          History
-        </button>
-        <button
-          onClick={() => router.push("/settings")}
-          className="text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer text-lg"
-          title="Settings"
-        >
-          &#9881;
-        </button>
-      </div>
+      <ProfileMenu />
 
       {/* Left panel — greeting */}
       <div className="hidden md:flex w-[440px] flex-col items-center justify-center px-14 relative">
