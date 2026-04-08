@@ -85,7 +85,7 @@ function WorshipContent() {
 
     async function generate() {
       for (let i = 1; i <= MAX_RETRIES; i++) {
-        setStatus(i === 1 ? "Thinking about what you need to hear..." : `Retrying (${i}/${MAX_RETRIES})...`);
+        setStatus("Thinking about what you need to hear...");
         setError(false);
 
         const success = await attempt();
