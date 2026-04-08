@@ -1,13 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { DevotionalGenerationRequest, DevotionalGenerationResult } from "./types";
 import type { UserSettings } from "./types";
 
-function getAnthropicClient(): { client: Anthropic; model: string } {
-  const apiKey = process.env.ANTHROPIC_API_KEY || "";
-  const model = process.env.AI_MODEL || "claude-opus-4-6";
+function createClient(): { client: OpenAI; model: string } {
+  const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const apiKey = process.env.OPENAI_API_KEY || "";
+  const model = process.env.AI_MODEL || "gpt-4o";
 
   return {
-    client: new Anthropic({ apiKey }),
+    client: new OpenAI({ baseURL, apiKey }),
     model,
   };
 }
@@ -171,18 +172,18 @@ export async function generateDevotional(
   settings: UserSettings | null,
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
-  const { client, model } = getAnthropicClient();
+  const { client, model } = createClient();
 
-  const response = await client.messages.create({
+  const response = await client.chat.completions.create({
     model,
     max_tokens: 16384,
-    system: SYSTEM_PROMPT,
     messages: [
+      { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
   });
 
-  const text = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const text = response.choices[0]?.message?.content || "";
   return parseDevotionalResponse(text);
 }
 
@@ -206,46 +207,35 @@ export async function generateDevotionalStreaming(
   onStatus: (status: string) => void,
 ): Promise<DevotionalGenerationResult> {
   const userPrompt = buildDevotionalPrompt(req);
-  const { client, model } = getAnthropicClient();
-  const MAX_RETRIES = 4;
+  const { client, model } = createClient();
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    onStatus(attempt === 1 ? "Thinking about what you need to hear..." : "Trying again...");
+  onStatus("Thinking about what you need to hear...");
 
-    try {
-      const stream = client.messages.stream({
-        model,
-        max_tokens: 16384,
-        system: SYSTEM_PROMPT,
-        messages: [
-          { role: "user", content: userPrompt },
-        ],
-      });
+  const stream = await client.chat.completions.create({
+    model,
+    max_tokens: 16384,
+    stream: true,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
+  });
 
-      let fullText = "";
-      const seenKeys = new Set<string>();
+  let fullText = "";
+  const seenKeys = new Set<string>();
 
-      stream.on("text", (text) => {
-        fullText += text;
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content || "";
+    fullText += delta;
 
-        for (const key of Object.keys(FIELD_LABELS)) {
-          if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
-            seenKeys.add(key);
-            onStatus(FIELD_LABELS[key]);
-          }
-        }
-      });
-
-      await stream.finalMessage();
-
-      onStatus("Saving your devotional...");
-      return parseDevotionalResponse(fullText);
-    } catch (err: unknown) {
-      const isContentFilter = err instanceof Error && err.message.includes("content filtering");
-      if (isContentFilter && attempt < MAX_RETRIES) continue;
-      throw err;
+    for (const key of Object.keys(FIELD_LABELS)) {
+      if (!seenKeys.has(key) && fullText.includes(`"${key}"`)) {
+        seenKeys.add(key);
+        onStatus(FIELD_LABELS[key]);
+      }
     }
   }
 
-  throw new Error("Generation failed after retries");
+  onStatus("Saving your devotional...");
+  return parseDevotionalResponse(fullText);
 }

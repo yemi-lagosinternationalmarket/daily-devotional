@@ -10,7 +10,7 @@ export async function GET() {
   const settings = await getUserSettings(session.user.id);
   return NextResponse.json({
     ...settings,
-    has_system_key: !!process.env.ANTHROPIC_API_KEY,
+    has_system_key: !!process.env.OPENAI_API_KEY,
   });
 }
 
