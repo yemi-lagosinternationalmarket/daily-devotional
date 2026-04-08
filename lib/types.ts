@@ -69,5 +69,11 @@ export interface UserSettings {
   bible_translation: string;
   default_vibe: string;
   theme: string;
+  spotify_access_token: string | null;
+  spotify_refresh_token: string | null;
+  spotify_connected: boolean;
+  spotify_playlist_praise: string | null;
+  spotify_playlist_worship: string | null;
+  spotify_playlist_instrumental: string | null;
   updated_at: string;
 }
