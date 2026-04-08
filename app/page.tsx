@@ -123,7 +123,7 @@ export default function Home() {
               onClick={() => router.push("/worship?input_type=blessed")}
               className="text-[13px] text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
             >
-              or let God choose &mdash; <span className="text-[var(--text-tertiary)]">I&apos;m Feeling Blessed</span>
+              <span className="hover:text-[var(--text-secondary)]">or let God choose</span> &mdash; I&apos;m Feeling Blessed
             </button>
           </div>
         </div>
