@@ -92,7 +92,7 @@ export default function Home() {
       </div>
 
       {/* Right panel — chat-style input */}
-      <div className="flex-1 flex flex-col justify-end p-8 md:px-14 md:py-10 overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-center p-8 md:px-14 md:py-10 overflow-y-auto">
         {/* Mobile greeting */}
         <div className="md:hidden mb-8">
           <Greeting />
