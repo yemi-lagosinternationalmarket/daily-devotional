@@ -100,8 +100,6 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState("");
-  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
-  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then(setSettings);
@@ -136,24 +134,6 @@ function SettingsContent() {
     setTimeout(() => setSaved(""), 2000);
   }
 
-  async function testConnection() {
-    if (!settings) return;
-    setTesting(true);
-    setTestResult(null);
-    const res = await fetch("/api/settings/test-llm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        base_url: settings.llm_base_url,
-        api_key: settings.llm_api_key,
-        model: settings.llm_model,
-      }),
-    });
-    const data = await res.json();
-    setTestResult({ ok: data.ok, message: data.ok ? "Connection works!" : data.error });
-    setTesting(false);
-  }
-
   if (!settings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -182,55 +162,6 @@ function SettingsContent() {
         {saved && (
           <span className="text-sm text-[rgba(100,255,100,0.6)]">{saved}</span>
         )}
-      </div>
-
-      {/* LLM Provider */}
-      <div className={sectionClass}>
-        <p className={labelClass}>AI Provider</p>
-        <p className="text-xs text-[var(--text-faint)] mb-4">
-          Works with OpenAI, Anthropic, LiteLLM, Ollama, or any OpenAI-compatible endpoint.
-        </p>
-        <div className="flex flex-col gap-3">
-          <input
-            className={inputClass}
-            placeholder="Base URL (e.g., https://api.openai.com/v1)"
-            value={settings.llm_base_url}
-            onChange={(e) => setSettings({ ...settings, llm_base_url: e.target.value })}
-            onBlur={() => save({ llm_base_url: settings.llm_base_url })}
-          />
-          <input
-            className={inputClass}
-            type="password"
-            placeholder="API Key"
-            value={settings.llm_api_key || ""}
-            onChange={(e) => setSettings({ ...settings, llm_api_key: e.target.value })}
-            onBlur={() => save({ llm_api_key: settings.llm_api_key })}
-          />
-          <input
-            className={inputClass}
-            placeholder="Model (e.g., gpt-4o)"
-            value={settings.llm_model}
-            onChange={(e) => setSettings({ ...settings, llm_model: e.target.value })}
-            onBlur={() => save({ llm_model: settings.llm_model })}
-          />
-          <div className="flex items-center gap-3">
-            <button
-              onClick={testConnection}
-              disabled={testing}
-              className="py-2.5 px-6 rounded-xl bg-[var(--interactive-bg)] border border-[var(--interactive-border)]
-                hover:bg-[var(--interactive-hover-bg)] hover:border-[var(--interactive-hover-border)]
-                transition-all duration-150 cursor-pointer text-sm font-medium text-[var(--text-secondary)]
-                disabled:opacity-50"
-            >
-              {testing ? "Testing..." : "Test Connection"}
-            </button>
-            {testResult && (
-              <span className={`text-sm ${testResult.ok ? "text-[rgba(100,255,100,0.6)]" : "text-[rgba(255,100,100,0.8)]"}`}>
-                {testResult.message}
-              </span>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Bible Translation */}
