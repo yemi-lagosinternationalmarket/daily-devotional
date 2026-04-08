@@ -22,7 +22,7 @@ function WorshipContent() {
       parent_devotional_id: searchParams.get("parent_id"),
     };
 
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 5;
 
     async function attempt(): Promise<boolean> {
       try {
