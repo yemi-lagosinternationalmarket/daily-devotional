@@ -251,9 +251,13 @@ export function WorshipScreen({ isReady, onReady, onBack, status, error, default
             </p>
           </>
         ) : status ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-col items-center gap-4">
             {!error && (
-              <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.25)] animate-[pulse_2s_ease-in-out_infinite]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)] animate-[bounce_1.4s_ease-in-out_infinite]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)] animate-[bounce_1.4s_ease-in-out_0.2s_infinite]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)] animate-[bounce_1.4s_ease-in-out_0.4s_infinite]" />
+              </div>
             )}
             <p className={`text-[13px] transition-all duration-500 ${error ? "text-[rgba(255,255,255,0.35)]" : "text-[var(--text-ghost)]"}`}>
               {status}
