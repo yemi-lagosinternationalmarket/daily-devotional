@@ -45,13 +45,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex">
-      <button
-        onClick={() => router.push("/settings")}
-        className="fixed top-8 right-8 text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer text-lg z-10"
-        title="Settings"
-      >
-        &#9881;
-      </button>
+      <div className="fixed top-8 right-8 flex items-center gap-4 z-10">
+        <button
+          onClick={() => router.push("/history")}
+          className="text-[13px] text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
+        >
+          History
+        </button>
+        <button
+          onClick={() => router.push("/settings")}
+          className="text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer text-lg"
+          title="Settings"
+        >
+          &#9881;
+        </button>
+      </div>
 
       {/* Left panel — greeting */}
       <div className="hidden md:flex w-[440px] flex-col items-center justify-center px-14 relative">
