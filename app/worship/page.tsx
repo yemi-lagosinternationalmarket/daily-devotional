@@ -22,7 +22,9 @@ function WorshipContent() {
       parent_devotional_id: searchParams.get("parent_id"),
     };
 
-    async function generate() {
+    const MAX_RETRIES = 3;
+
+    async function attempt(): Promise<boolean> {
       try {
         const res = await fetch("/api/devotional/generate", {
           method: "POST",
@@ -30,18 +32,10 @@ function WorshipContent() {
           body: JSON.stringify(body),
         });
 
-        if (!res.ok) {
-          setStatus("Something went wrong. Try again.");
-          setError(true);
-          return;
-        }
+        if (!res.ok) return false;
 
         const reader = res.body?.getReader();
-        if (!reader) {
-          setStatus("Something went wrong. Try again.");
-          setError(true);
-          return;
-        }
+        if (!reader) return false;
 
         const decoder = new TextDecoder();
         let buffer = "";
@@ -52,7 +46,6 @@ function WorshipContent() {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // Split on double newline (SSE message boundary)
           const messages = buffer.split("\n\n");
           buffer = messages.pop() || "";
 
@@ -75,20 +68,32 @@ function WorshipContent() {
                 const devotional = JSON.parse(data);
                 setDevotionalId(devotional.id);
                 setIsReady(true);
+                return true;
               } catch {
-                setStatus("Something went wrong. Try again.");
-                setError(true);
+                return false;
               }
             } else if (eventType === "error") {
-              setStatus("Something went wrong. Try again.");
-              setError(true);
+              return false;
             }
           }
         }
+        return false;
       } catch {
-        setStatus("Connection lost. Try again.");
-        setError(true);
+        return false;
       }
+    }
+
+    async function generate() {
+      for (let i = 1; i <= MAX_RETRIES; i++) {
+        setStatus(i === 1 ? "Thinking about what you need to hear..." : `Retrying (${i}/${MAX_RETRIES})...`);
+        setError(false);
+
+        const success = await attempt();
+        if (success) return;
+      }
+
+      setStatus("Something went wrong. Try again.");
+      setError(true);
     }
 
     generate();
