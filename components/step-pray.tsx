@@ -14,7 +14,7 @@ export function StepPray({ text, onNext }: StepPrayProps) {
         {text}
       </p>
 
-      <div className="fixed bottom-12 left-1/2 -translate-x-1/2">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2">
         <button
           onClick={onNext}
           className="py-3.5 px-11 rounded-xl

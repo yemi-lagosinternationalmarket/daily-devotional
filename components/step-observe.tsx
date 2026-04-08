@@ -50,7 +50,7 @@ export function StepObserve({ question, devotionalId, onNext }: StepObserveProps
         Optional — you can skip this
       </p>
 
-      <div className="fixed bottom-12 left-1/2 -translate-x-1/2">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2">
         <button
           onClick={handleNext}
           className="py-3.5 px-11 rounded-xl

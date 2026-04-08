@@ -59,7 +59,7 @@ export function StepApply({ action, timeEstimate, devotionalId, onNext }: StepAp
         Optional — just doing it in your head counts too
       </p>
 
-      <div className="fixed bottom-12 left-1/2 -translate-x-1/2">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2">
         <button
           onClick={handleNext}
           className="py-3.5 px-11 rounded-xl
