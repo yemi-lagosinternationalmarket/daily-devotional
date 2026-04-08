@@ -5,7 +5,7 @@ interface StepPrayProps {
 
 export function StepPray({ text, onNext }: StepPrayProps) {
   return (
-    <div className="max-w-[640px] mx-auto px-8">
+    <div className="max-w-[640px] mx-auto px-8 pb-32">
       <p className="text-[11px] font-semibold text-[var(--text-ghost)] tracking-[2px] uppercase text-center mb-5">
         Pray
       </p>
