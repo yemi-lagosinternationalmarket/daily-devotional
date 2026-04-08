@@ -12,7 +12,14 @@ function createClient(settings: UserSettings | null): { client: OpenAI; model: s
   const model = hasPersonalKey ? settings!.llm_model : (process.env.AI_MODEL || "gpt-4o");
 
   return {
-    client: new OpenAI({ baseURL, apiKey }),
+    client: new OpenAI({
+      baseURL,
+      apiKey,
+      defaultHeaders: baseURL.includes("openrouter") ? {
+        "HTTP-Referer": "https://daily-devotional-nu.vercel.app",
+        "X-Title": "Daily Devotional",
+      } : undefined,
+    }),
     model,
   };
 }
