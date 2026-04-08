@@ -119,12 +119,16 @@ export default function Home() {
 
           {/* Feeling Blessed */}
           <div className="text-center mt-5">
-            <button
-              onClick={() => router.push("/worship?input_type=blessed")}
-              className="text-[13px] text-[var(--text-ghost)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
-            >
-              <span className="hover:text-[var(--text-secondary)]">or let God choose</span> &mdash; I&apos;m Feeling Blessed
-            </button>
+            <span className="text-[13px] text-[var(--text-ghost)]">
+              or let God choose &mdash;{" "}
+              <a
+                onClick={() => router.push("/worship?input_type=blessed")}
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+                style={{ cursor: "pointer" }}
+              >
+                I&apos;m Feeling Blessed
+              </a>
+            </span>
           </div>
         </div>
       </div>
