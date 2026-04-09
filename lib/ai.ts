@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { DevotionalGenerationRequest, DevotionalGenerationResult } from "./types";
 import type { UserSettings } from "./types";
+import { buildPersonaPrompt } from "./persona";
 
 function createClient(): { client: OpenAI; model: string } {
   const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
@@ -148,12 +149,17 @@ export async function generateDevotional(
   const userPrompt = buildDevotionalPrompt(req);
   const { client, model } = createClient();
 
+  const personaContext = buildPersonaPrompt(settings?.persona);
+  const systemContent = personaContext
+    ? `${SYSTEM_PROMPT}\n\nAbout the reader: ${personaContext}`
+    : SYSTEM_PROMPT;
+
   const response = await client.chat.completions.create({
     model,
     max_tokens: 16384,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemContent },
       { role: "user", content: userPrompt },
     ],
   });
@@ -184,6 +190,11 @@ export async function generateDevotionalStreaming(
   const userPrompt = buildDevotionalPrompt(req);
   const { client, model } = createClient();
 
+  const personaContext = buildPersonaPrompt(settings?.persona);
+  const systemContent = personaContext
+    ? `${SYSTEM_PROMPT}\n\nAbout the reader: ${personaContext}`
+    : SYSTEM_PROMPT;
+
   onStatus("Thinking about what you need to hear...");
 
   const stream = await client.chat.completions.create({
@@ -191,7 +202,7 @@ export async function generateDevotionalStreaming(
     max_tokens: 16384,
     stream: true,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemContent },
       { role: "user", content: userPrompt },
     ],
   });
