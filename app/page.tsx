@@ -22,6 +22,7 @@ const SUGGESTIONS = [
 export default function Home() {
   const router = useRouter();
   const [text, setText] = useState("");
+  const [ready, setReady] = useState(false);
 
   // Redirect to onboarding if persona not set
   useEffect(() => {
@@ -30,9 +31,11 @@ export default function Home() {
       .then((s) => {
         if (s && s.persona === null) {
           router.push("/onboarding");
+        } else {
+          setReady(true);
         }
       })
-      .catch(() => {});
+      .catch(() => setReady(true));
   }, [router]);
 
   const suggestions = useMemo(() => {
@@ -54,6 +57,14 @@ export default function Home() {
       e.preventDefault();
       submit(text);
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--text-ghost)]">Loading...</p>
+      </div>
+    );
   }
 
   return (

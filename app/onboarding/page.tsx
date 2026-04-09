@@ -17,11 +17,23 @@ export default function OnboardingPage() {
 
   async function savePersona(data: Persona) {
     setSaving(true);
-    await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: data }),
-    });
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ persona: Object.keys(data).length > 0 ? data : {} }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Retry once silently — if it fails again, still proceed
+      try {
+        await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ persona: Object.keys(data).length > 0 ? data : {} }),
+        });
+      } catch {}
+    }
     setSaving(false);
   }
 
