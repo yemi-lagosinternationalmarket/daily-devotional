@@ -75,5 +75,17 @@ export interface UserSettings {
   spotify_playlist_praise: string | null;
   spotify_playlist_worship: string | null;
   spotify_playlist_instrumental: string | null;
+  persona: Persona | null;
   updated_at: string;
+}
+
+export interface Persona {
+  faith_stage?: "new" | "mature" | "returning" | "complicated";
+  faith_detail?: string;
+  season?: "growing" | "hard" | "stuck" | "transition";
+  season_detail?: string;
+  tone?: "warm" | "direct" | "theological" | "simple";
+  tone_detail?: string;
+  tradition?: "evangelical" | "catholic" | "mainline" | "pentecostal" | "unspecified";
+  tradition_detail?: string;
 }
