@@ -108,6 +108,7 @@ export default function OnboardingPage() {
         prompt={q.prompt}
         options={q.options}
         detailPlaceholder={q.detailPlaceholder}
+        hideDetail={"hideDetail" in q && !!q.hideDetail}
         selected={(persona[q.key] as string) || null}
         detail={(persona[q.detailKey] as string) || ""}
         onSelect={handleSelect}

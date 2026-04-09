@@ -119,4 +119,50 @@ export const ONBOARDING_QUESTIONS = [
     ],
     detailPlaceholder: "Anything else about your background?",
   },
+  {
+    key: "checkin_frequency" as const,
+    detailKey: "checkin_frequency" as const, // no detail field for this one
+    prompt: "How often should we check in on how you're doing?",
+    options: [
+      { label: "Every week", value: "weekly" },
+      { label: "Every two weeks", value: "biweekly" },
+      { label: "Every month", value: "monthly" },
+      { label: "Never", value: "never" },
+    ],
+    detailPlaceholder: "",
+    hideDetail: true,
+  },
 ] as const;
+
+// Questions eligible for periodic check-in (excludes checkin_frequency itself)
+export const CHECKIN_QUESTIONS = ONBOARDING_QUESTIONS.filter(
+  (q) => q.key !== "checkin_frequency"
+);
+
+const FREQUENCY_DAYS: Record<string, number> = {
+  weekly: 7,
+  biweekly: 14,
+  monthly: 30,
+};
+
+export function isCheckinDue(persona: Persona | null | undefined): boolean {
+  if (!persona) return false;
+  if (!persona.checkin_frequency || persona.checkin_frequency === "never") return false;
+
+  const days = FREQUENCY_DAYS[persona.checkin_frequency];
+  if (!days) return false;
+
+  if (!persona.last_checkin) return true; // never checked in
+
+  const last = new Date(persona.last_checkin);
+  const now = new Date();
+  const diffDays = (now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays >= days;
+}
+
+export function getNextCheckinQuestion(persona: Persona): number {
+  // Rotate through the 4 persona questions based on which was least recently relevant
+  // Simple approach: pick based on month to cycle through them
+  const month = new Date().getMonth();
+  return month % CHECKIN_QUESTIONS.length;
+}

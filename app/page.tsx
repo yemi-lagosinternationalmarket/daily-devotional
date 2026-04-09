@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { Greeting } from "@/components/greeting";
 import { VerseOfDay } from "@/components/verse-of-day";
 import { ProfileMenu } from "@/components/profile-menu";
+import { OnboardingStep } from "@/components/onboarding-step";
+import { isCheckinDue, getNextCheckinQuestion, CHECKIN_QUESTIONS } from "@/lib/persona";
+import type { Persona } from "@/lib/types";
 
 const SUGGESTIONS = [
   "I'm feeling anxious about today",
@@ -23,20 +26,59 @@ export default function Home() {
   const router = useRouter();
   const [text, setText] = useState("");
   const [ready, setReady] = useState(false);
+  const [checkin, setCheckin] = useState<{ question: typeof CHECKIN_QUESTIONS[number]; persona: Persona } | null>(null);
+  const [checkinSelected, setCheckinSelected] = useState<string | null>(null);
+  const [checkinDetail, setCheckinDetail] = useState("");
 
-  // Redirect to onboarding if persona not set
+  // Redirect to onboarding if persona not set, or show check-in if due
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
       .then((s) => {
         if (s && s.persona === null) {
           router.push("/onboarding");
+        } else if (s?.persona && isCheckinDue(s.persona)) {
+          const idx = getNextCheckinQuestion(s.persona);
+          setCheckin({ question: CHECKIN_QUESTIONS[idx], persona: s.persona });
+          setCheckinSelected(s.persona[CHECKIN_QUESTIONS[idx].key as keyof Persona] as string || null);
+          setReady(true);
         } else {
           setReady(true);
         }
       })
       .catch(() => setReady(true));
   }, [router]);
+
+  async function handleCheckinDone() {
+    if (!checkin) return;
+    const q = checkin.question;
+    const updated: Persona = {
+      ...checkin.persona,
+      [q.key]: checkinSelected || checkin.persona[q.key as keyof Persona],
+      last_checkin: new Date().toISOString(),
+    };
+    if (checkinDetail) {
+      (updated as Record<string, unknown>)[q.detailKey] = checkinDetail;
+    }
+    await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ persona: updated }),
+    }).catch(() => {});
+    setCheckin(null);
+  }
+
+  function handleCheckinSkip() {
+    // Just mark the check-in as done without changing answers
+    if (!checkin) return;
+    const updated: Persona = { ...checkin.persona, last_checkin: new Date().toISOString() };
+    fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ persona: updated }),
+    }).catch(() => {});
+    setCheckin(null);
+  }
 
   const suggestions = useMemo(() => {
     const shuffled = [...SUGGESTIONS].sort(() => Math.random() - 0.5);
@@ -63,6 +105,25 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-[var(--text-ghost)]">Loading...</p>
+      </div>
+    );
+  }
+
+  if (checkin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+        <p className="text-xs text-[var(--text-ghost)] mb-6">Quick check-in</p>
+        <OnboardingStep
+          prompt={checkin.question.prompt}
+          options={checkin.question.options}
+          detailPlaceholder={checkin.question.detailPlaceholder}
+          selected={checkinSelected}
+          detail={checkinDetail}
+          onSelect={setCheckinSelected}
+          onDetailChange={setCheckinDetail}
+          onNext={handleCheckinDone}
+          onSkip={handleCheckinSkip}
+        />
       </div>
     );
   }

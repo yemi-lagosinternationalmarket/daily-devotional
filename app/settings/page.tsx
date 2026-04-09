@@ -26,6 +26,8 @@ interface Settings {
     tone_detail?: string;
     tradition?: string;
     tradition_detail?: string;
+    checkin_frequency?: string;
+    last_checkin?: string;
   } | null;
 }
 

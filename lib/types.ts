@@ -88,4 +88,6 @@ export interface Persona {
   tone_detail?: string;
   tradition?: "evangelical" | "catholic" | "mainline" | "pentecostal" | "unspecified";
   tradition_detail?: string;
+  checkin_frequency?: "weekly" | "biweekly" | "monthly" | "never";
+  last_checkin?: string; // ISO date string
 }
