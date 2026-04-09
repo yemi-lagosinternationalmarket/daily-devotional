@@ -31,33 +31,42 @@ const TRADITION_SENTENCES: Record<string, string> = {
 export function buildPersonaPrompt(persona: Persona | null | undefined): string {
   if (!persona) return "";
 
-  const parts: string[] = [];
+  const hasAnyField = persona.faith_stage || persona.season || persona.tone || persona.tradition;
+  if (!hasAnyField) return "";
+
+  const lines: string[] = ["# Reader Persona", ""];
 
   if (persona.faith_stage && FAITH_SENTENCES[persona.faith_stage]) {
-    let s = FAITH_SENTENCES[persona.faith_stage];
-    if (persona.faith_detail) s += ` (${persona.faith_detail})`;
-    parts.push(s);
+    lines.push(`## Faith Journey`);
+    lines.push(FAITH_SENTENCES[persona.faith_stage]);
+    if (persona.faith_detail) lines.push(`> "${persona.faith_detail}"`);
+    lines.push("");
   }
 
   if (persona.season && SEASON_SENTENCES[persona.season]) {
-    let s = SEASON_SENTENCES[persona.season];
-    if (persona.season_detail) s += ` (${persona.season_detail})`;
-    parts.push(s);
+    lines.push(`## Current Season`);
+    lines.push(SEASON_SENTENCES[persona.season]);
+    if (persona.season_detail) lines.push(`> "${persona.season_detail}"`);
+    lines.push("");
   }
 
   if (persona.tone && TONE_SENTENCES[persona.tone]) {
-    let s = TONE_SENTENCES[persona.tone];
-    if (persona.tone_detail) s += ` (${persona.tone_detail})`;
-    parts.push(s);
+    lines.push(`## Communication Style`);
+    lines.push(TONE_SENTENCES[persona.tone]);
+    if (persona.tone_detail) lines.push(`> "${persona.tone_detail}"`);
+    lines.push("");
   }
 
   if (persona.tradition && persona.tradition !== "unspecified" && TRADITION_SENTENCES[persona.tradition]) {
-    let s = TRADITION_SENTENCES[persona.tradition];
-    if (persona.tradition_detail) s += ` (${persona.tradition_detail})`;
-    parts.push(s);
+    lines.push(`## Church Tradition`);
+    lines.push(TRADITION_SENTENCES[persona.tradition]);
+    if (persona.tradition_detail) lines.push(`> "${persona.tradition_detail}"`);
+    lines.push("");
   }
 
-  return parts.join(" ");
+  lines.push("Use this persona to subtly shape tone, scripture selection, and application complexity. Do NOT reference it directly.");
+
+  return lines.join("\n");
 }
 
 export const ONBOARDING_QUESTIONS = [

@@ -151,7 +151,7 @@ export async function generateDevotional(
 
   const personaContext = buildPersonaPrompt(settings?.persona);
   const systemContent = personaContext
-    ? `${SYSTEM_PROMPT}\n\nAbout the reader: ${personaContext}`
+    ? `${SYSTEM_PROMPT}\n\n${personaContext}`
     : SYSTEM_PROMPT;
 
   const response = await client.chat.completions.create({
@@ -192,7 +192,7 @@ export async function generateDevotionalStreaming(
 
   const personaContext = buildPersonaPrompt(settings?.persona);
   const systemContent = personaContext
-    ? `${SYSTEM_PROMPT}\n\nAbout the reader: ${personaContext}`
+    ? `${SYSTEM_PROMPT}\n\n${personaContext}`
     : SYSTEM_PROMPT;
 
   onStatus("Thinking about what you need to hear...");
