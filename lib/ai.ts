@@ -29,6 +29,10 @@ const SYSTEM_PROMPT = `You are a warm, direct Bible study mentor. Output a singl
 
 Output ONLY valid JSON. No markdown, no code fences, no explanation.`;
 
+function sanitizeInput(text: string, maxLen: number = 500): string {
+  return text.slice(0, maxLen).replace(/[<>]/g, "").trim();
+}
+
 export function buildDevotionalPrompt(req: DevotionalGenerationRequest): string {
   const parts: string[] = [];
 
@@ -36,13 +40,13 @@ export function buildDevotionalPrompt(req: DevotionalGenerationRequest): string 
     parts.push("The user chose 'I'm Feeling Blessed' — they want you to choose a topic and passage for them. Pick something encouraging, uplifting, or timely. Surprise them with something they need to hear.");
   } else {
     if (req.topic) {
-      parts.push(`The user chose the topic: "${req.topic}". Select a scripture passage and build the devotional around this theme.`);
+      parts.push(`The user chose the topic: "${sanitizeInput(req.topic, 200)}". Select a scripture passage and build the devotional around this theme.`);
     }
     if (req.mood) {
-      parts.push(`The user is feeling: "${req.mood}". Speak into this emotional state. The commentary and prayer should acknowledge how they feel and connect it to scripture.`);
+      parts.push(`The user is feeling: "${sanitizeInput(req.mood, 200)}". Speak into this emotional state. The commentary and prayer should acknowledge how they feel and connect it to scripture.`);
     }
     if (req.free_text) {
-      parts.push(`The user wrote: "${req.free_text}". Use this as context for selecting the passage and writing the devotional. Speak directly to what they shared.`);
+      parts.push(`The user wrote: "${sanitizeInput(req.free_text, 500)}". Use this as context for selecting the passage and writing the devotional. Speak directly to what they shared.`);
     }
   }
 

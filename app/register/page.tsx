@@ -79,11 +79,11 @@ export default function RegisterPage() {
           />
           <input
             type="password"
-            placeholder="Password (6+ characters)"
+            placeholder="Password (8+ characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             className="w-full p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--surface-border)]
               text-sm text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]
               outline-none focus:border-[var(--surface-hover-border)]"

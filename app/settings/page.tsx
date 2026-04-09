@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { exchangeCode, startSpotifyAuth, parsePlaylistId, getSpotifyPlaylistName } from "@/lib/spotify";
+import { exchangeCode, validateSpotifyState, startSpotifyAuth, parsePlaylistId, getSpotifyPlaylistName } from "@/lib/spotify";
 
 interface Settings {
   llm_base_url: string;
-  llm_api_key: string | null;
+  has_llm_key: boolean;
   llm_model: string;
   spotify_connected: boolean;
   spotify_access_token: string | null;
@@ -121,7 +121,13 @@ function SettingsContent() {
   // Handle Spotify OAuth callback
   useEffect(() => {
     const code = searchParams.get("spotify_code");
-    if (code) {
+    const state = searchParams.get("spotify_state");
+    if (code && state) {
+      // Validate state to prevent CSRF
+      if (!validateSpotifyState(state)) {
+        router.replace("/settings");
+        return;
+      }
       exchangeCode(code).then(async (tokens) => {
         await save({
           spotify_access_token: tokens.access_token,

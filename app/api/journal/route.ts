@@ -9,6 +9,14 @@ export async function POST(request: NextRequest) {
   }
 
   const { devotional_id, step, response_text } = await request.json();
+
+  if (!devotional_id || !step || !response_text) {
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (typeof response_text !== "string" || response_text.length > 5000) {
+    return NextResponse.json({ error: "Response too long" }, { status: 400 });
+  }
+
   const entry = await insertJournalEntry(session.user.id, { devotional_id, step, response_text });
   return NextResponse.json(entry);
 }

@@ -8,9 +8,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const settings = await getUserSettings(session.user.id);
+  if (!settings) {
+    return NextResponse.json(null);
+  }
+  // Strip sensitive fields — never send secrets to the client
+  const { llm_api_key, spotify_access_token, spotify_refresh_token, ...safe } = settings;
   return NextResponse.json({
-    ...settings,
+    ...safe,
+    has_llm_key: !!llm_api_key,
     has_system_key: !!process.env.OPENAI_API_KEY,
+    spotify_connected: settings.spotify_connected,
+    // Spotify access token is needed client-side for Web Playback SDK
+    spotify_access_token: spotify_access_token,
   });
 }
 
@@ -20,6 +29,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = await request.json();
-  const settings = await updateUserSettings(session.user.id, body);
-  return NextResponse.json(settings);
+  const updated = await updateUserSettings(session.user.id, body);
+  // Strip sensitive fields from response
+  const { llm_api_key: _k, spotify_refresh_token: _r, ...safe } = updated;
+  return NextResponse.json({
+    ...safe,
+    has_llm_key: !!_k,
+    has_system_key: !!process.env.OPENAI_API_KEY,
+  });
 }

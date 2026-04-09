@@ -107,14 +107,16 @@ export function StepRead({ devotional, onNext }: StepReadProps) {
         Read
       </p>
 
-      <div className="text-lg text-[var(--text-secondary)] leading-[1.85] mb-6"
-        dangerouslySetInnerHTML={{
-          __html: devotional.scripture_text.replace(
-            devotional.key_verse,
-            `<span class="text-[var(--text-primary)] font-medium">${devotional.key_verse}</span>`
-          ),
-        }}
-      />
+      <div className="text-lg text-[var(--text-secondary)] leading-[1.85] mb-6">
+        {devotional.scripture_text.includes(devotional.key_verse)
+          ? <>
+              {devotional.scripture_text.split(devotional.key_verse)[0]}
+              <span className="text-[var(--text-primary)] font-medium">{devotional.key_verse}</span>
+              {devotional.scripture_text.split(devotional.key_verse).slice(1).join(devotional.key_verse)}
+            </>
+          : devotional.scripture_text
+        }
+      </div>
 
       <p className="text-[13px] font-medium text-[var(--text-ghost)] tracking-[0.3px] mb-6">
         {devotional.scripture_ref} {devotional.scripture_translation}

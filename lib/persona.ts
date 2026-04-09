@@ -28,6 +28,10 @@ const TRADITION_SENTENCES: Record<string, string> = {
   pentecostal: "They come from a Pentecostal/Charismatic background.",
 };
 
+function sanitizeDetail(text: string): string {
+  return text.slice(0, 200).replace(/[<>]/g, "").trim();
+}
+
 export function buildPersonaPrompt(persona: Persona | null | undefined): string {
   if (!persona) return "";
 
@@ -39,28 +43,28 @@ export function buildPersonaPrompt(persona: Persona | null | undefined): string 
   if (persona.faith_stage && FAITH_SENTENCES[persona.faith_stage]) {
     lines.push(`## Faith Journey`);
     lines.push(FAITH_SENTENCES[persona.faith_stage]);
-    if (persona.faith_detail) lines.push(`> "${persona.faith_detail}"`);
+    if (persona.faith_detail) lines.push(`> "${sanitizeDetail(persona.faith_detail)}"`);
     lines.push("");
   }
 
   if (persona.season && SEASON_SENTENCES[persona.season]) {
     lines.push(`## Current Season`);
     lines.push(SEASON_SENTENCES[persona.season]);
-    if (persona.season_detail) lines.push(`> "${persona.season_detail}"`);
+    if (persona.season_detail) lines.push(`> "${sanitizeDetail(persona.season_detail)}"`);
     lines.push("");
   }
 
   if (persona.tone && TONE_SENTENCES[persona.tone]) {
     lines.push(`## Communication Style`);
     lines.push(TONE_SENTENCES[persona.tone]);
-    if (persona.tone_detail) lines.push(`> "${persona.tone_detail}"`);
+    if (persona.tone_detail) lines.push(`> "${sanitizeDetail(persona.tone_detail)}"`);
     lines.push("");
   }
 
   if (persona.tradition && persona.tradition !== "unspecified" && TRADITION_SENTENCES[persona.tradition]) {
     lines.push(`## Church Tradition`);
     lines.push(TRADITION_SENTENCES[persona.tradition]);
-    if (persona.tradition_detail) lines.push(`> "${persona.tradition_detail}"`);
+    if (persona.tradition_detail) lines.push(`> "${sanitizeDetail(persona.tradition_detail)}"`);
     lines.push("");
   }
 

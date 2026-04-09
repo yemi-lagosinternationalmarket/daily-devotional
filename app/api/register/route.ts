@@ -16,8 +16,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "All fields are required" }, { status: 400 });
   }
 
-  if (password.length < 6) {
-    return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+  if (typeof email !== "string" || email.length > 255) {
+    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+  }
+  if (typeof name !== "string" || name.length > 100) {
+    return NextResponse.json({ error: "Name is too long" }, { status: 400 });
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+  }
+  if (password.length > 128) {
+    return NextResponse.json({ error: "Password is too long" }, { status: 400 });
   }
 
   const normalizedEmail = email.toLowerCase().trim();

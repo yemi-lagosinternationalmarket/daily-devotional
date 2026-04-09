@@ -60,6 +60,11 @@ export async function startSpotifyAuth(): Promise<void> {
 
   sessionStorage.setItem("spotify_code_verifier", verifier);
 
+  // Generate state for CSRF protection
+  const state = crypto.getRandomValues(new Uint8Array(16))
+    .reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
+  sessionStorage.setItem("spotify_oauth_state", state);
+
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
@@ -67,9 +72,16 @@ export async function startSpotifyAuth(): Promise<void> {
     redirect_uri: getRedirectUri(),
     code_challenge_method: "S256",
     code_challenge: challenge,
+    state,
   });
 
   window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+export function validateSpotifyState(returnedState: string): boolean {
+  const stored = sessionStorage.getItem("spotify_oauth_state");
+  sessionStorage.removeItem("spotify_oauth_state");
+  return !!stored && stored === returnedState;
 }
 
 export async function exchangeCode(code: string): Promise<{
