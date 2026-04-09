@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { insertJournalEntry, listDevotionals } from "@/lib/queries";
+import { getDevotional, insertJournalEntry, listDevotionals } from "@/lib/queries";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
   }
   if (typeof response_text !== "string" || response_text.length > 5000) {
     return NextResponse.json({ error: "Response too long" }, { status: 400 });
+  }
+
+  // Verify devotional belongs to this user
+  const devotional = await getDevotional(session.user.id, devotional_id);
+  if (!devotional) {
+    return NextResponse.json({ error: "Devotional not found" }, { status: 404 });
   }
 
   const entry = await insertJournalEntry(session.user.id, { devotional_id, step, response_text });

@@ -30,7 +30,7 @@ const SYSTEM_PROMPT = `You are a warm, direct Bible study mentor. Output a singl
 Output ONLY valid JSON. No markdown, no code fences, no explanation.`;
 
 function sanitizeInput(text: string, maxLen: number = 500): string {
-  return text.slice(0, maxLen).replace(/[<>]/g, "").trim();
+  return text.slice(0, maxLen).replace(/[<>＜＞«»‹›〈〉⟨⟩]/g, "").trim();
 }
 
 export function buildDevotionalPrompt(req: DevotionalGenerationRequest): string {
