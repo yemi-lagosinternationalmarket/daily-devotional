@@ -201,6 +201,7 @@ export async function generateDevotionalStreaming(
     model,
     max_tokens: 16384,
     stream: true,
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: systemContent },
       { role: "user", content: userPrompt },

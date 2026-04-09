@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
         send("done", JSON.stringify(devotional));
       } catch (err) {
+        console.error("[devotional/generate] Generation failed:", err);
         send("error", String(err));
       } finally {
         controller.close();

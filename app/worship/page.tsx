@@ -32,7 +32,10 @@ function WorshipContent() {
           body: JSON.stringify(body),
         });
 
-        if (!res.ok) return false;
+        if (!res.ok) {
+          console.warn(`[worship] generate returned ${res.status}`);
+          return false;
+        }
 
         const reader = res.body?.getReader();
         if (!reader) return false;
@@ -73,12 +76,14 @@ function WorshipContent() {
                 return false;
               }
             } else if (eventType === "error") {
+              console.warn(`[worship] generation error:`, data);
               return false;
             }
           }
         }
         return false;
-      } catch {
+      } catch (err) {
+        console.warn(`[worship] attempt failed:`, err);
         return false;
       }
     }
