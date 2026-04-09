@@ -1,16 +1,19 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useMusicPlayer } from "@/lib/music-context";
 import { Toast } from "./toast";
 
 export function MiniPlayer() {
   const { currentSong, playing, togglePlay, next, progress, showMiniPlayer, toastMessage, dismissToast } = useMusicPlayer();
+  const pathname = usePathname();
+  const onWorshipPage = pathname === "/worship";
 
   return (
     <>
       {toastMessage && <Toast message={toastMessage} onDismiss={dismissToast} />}
 
-      {showMiniPlayer && currentSong && (
+      {!onWorshipPage && (showMiniPlayer || playing) && currentSong && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
           {/* Progress bar on top edge */}
           <div className="h-[2px] bg-[rgba(255,255,255,0.04)]">
