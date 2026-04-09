@@ -23,6 +23,18 @@ export default function Home() {
   const router = useRouter();
   const [text, setText] = useState("");
 
+  // Redirect to onboarding if persona not set
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((s) => {
+        if (s && s.persona === null) {
+          router.push("/onboarding");
+        }
+      })
+      .catch(() => {});
+  }, [router]);
+
   const suggestions = useMemo(() => {
     const shuffled = [...SUGGESTIONS].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 4);
