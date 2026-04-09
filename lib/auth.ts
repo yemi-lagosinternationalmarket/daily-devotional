@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import pool from "./db";
+import { rateLimit } from "./rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -11,10 +12,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: {},
         password: {},
       },
-      async authorize(credentials) {
-        const email = credentials?.email as string;
+      async authorize(credentials, request) {
+        const email = (credentials?.email as string)?.toLowerCase().trim();
         const password = credentials?.password as string;
         if (!email || !password) return null;
+
+        // Rate limit by email — 10 attempts per 15 minutes
+        const { ok } = rateLimit(`login:${email}`, 10, 15 * 60 * 1000);
+        if (!ok) return null;
 
         const result = await pool.query(
           "SELECT id, email, name, password_hash FROM users WHERE email = $1",
