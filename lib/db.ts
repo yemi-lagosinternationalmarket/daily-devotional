@@ -1,8 +1,9 @@
 import { Pool } from "pg";
 
+const isProduction = process.env.NODE_ENV === "production";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes("neon.tech") ? { rejectUnauthorized: false } : undefined,
+  ssl: isProduction ? { rejectUnauthorized: true } : undefined,
 });
 
 export default pool;

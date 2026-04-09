@@ -21,15 +21,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const { ok } = rateLimit(`login:${email}`, 10, 15 * 60 * 1000);
         if (!ok) return null;
 
+        // Constant-time: always run bcrypt to prevent timing-based user enumeration
+        const DUMMY_HASH = "$2a$12$000000000000000000000uGbycBCAkHLmnRPnOBp.6gjbKKnEweaS";
         const result = await pool.query(
           "SELECT id, email, name, password_hash FROM users WHERE email = $1",
           [email]
         );
         const user = result.rows[0];
-        if (!user) return null;
-
-        const valid = await bcrypt.compare(password, user.password_hash);
-        if (!valid) return null;
+        const valid = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH);
+        if (!user || !valid) return null;
 
         return { id: user.id, email: user.email, name: user.name };
       },

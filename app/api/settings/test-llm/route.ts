@@ -16,6 +16,30 @@ export async function POST(request: NextRequest) {
 
   const { base_url, api_key, model } = await request.json();
 
+  // Block SSRF — only allow HTTPS to public hosts
+  try {
+    const url = new URL(base_url);
+    const hostname = url.hostname.toLowerCase();
+    if (url.protocol !== "https:") {
+      return NextResponse.json({ ok: false, error: "Only HTTPS URLs are allowed." }, { status: 400 });
+    }
+    if (
+      hostname === "localhost" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("169.254.") ||
+      hostname.startsWith("172.") ||
+      hostname.endsWith(".internal") ||
+      hostname.endsWith(".local")
+    ) {
+      return NextResponse.json({ ok: false, error: "Private network URLs are not allowed." }, { status: 400 });
+    }
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid URL." }, { status: 400 });
+  }
+
   try {
     const client = new OpenAI({ baseURL: base_url, apiKey: api_key });
     const response = await client.chat.completions.create({
