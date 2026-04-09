@@ -52,18 +52,16 @@ export function OnboardingStep({
         ))}
       </div>
 
-      {selected && (
-        <textarea
-          value={detail}
-          onChange={(e) => onDetailChange(e.target.value)}
-          placeholder={detailPlaceholder}
-          rows={2}
-          maxLength={200}
-          className="w-full p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--surface-border)]
-            text-sm text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]
-            outline-none focus:border-[var(--surface-hover-border)] resize-none mb-6"
-        />
-      )}
+      <textarea
+        value={detail}
+        onChange={(e) => onDetailChange(e.target.value)}
+        placeholder={detailPlaceholder}
+        rows={2}
+        maxLength={200}
+        className="w-full p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--surface-border)]
+          text-sm text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]
+          outline-none focus:border-[var(--surface-hover-border)] resize-none mb-6"
+      />
 
       <div className="w-full flex items-center justify-between">
         <button
