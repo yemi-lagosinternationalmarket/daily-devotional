@@ -13,7 +13,7 @@ export async function updateUserSettings(userId: string, settings: Partial<UserS
   const values: unknown[] = [];
   let idx = 2;
 
-  const allowed = ["llm_base_url", "llm_api_key", "llm_model", "bible_translation", "default_vibe", "theme", "spotify_access_token", "spotify_refresh_token", "spotify_connected", "spotify_playlist_praise", "spotify_playlist_worship", "spotify_playlist_instrumental"];
+  const allowed = ["llm_base_url", "llm_api_key", "llm_model", "bible_translation", "default_vibe", "theme", "spotify_access_token", "spotify_refresh_token", "spotify_connected", "spotify_playlist_praise", "spotify_playlist_worship", "spotify_playlist_instrumental", "persona"];
   for (const key of allowed) {
     if (key in settings) {
       fields.push(`${key} = $${idx}`);
