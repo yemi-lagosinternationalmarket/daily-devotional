@@ -26,6 +26,7 @@ CREATE TABLE user_settings (
   spotify_playlist_praise TEXT,
   spotify_playlist_worship TEXT,
   spotify_playlist_instrumental TEXT,
+  persona JSONB,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
