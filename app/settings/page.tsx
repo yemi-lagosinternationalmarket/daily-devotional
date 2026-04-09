@@ -17,9 +17,20 @@ interface Settings {
   bible_translation: string;
   default_vibe: string;
   theme: string;
+  persona: {
+    faith_stage?: string;
+    faith_detail?: string;
+    season?: string;
+    season_detail?: string;
+    tone?: string;
+    tone_detail?: string;
+    tradition?: string;
+    tradition_detail?: string;
+  } | null;
 }
 
 import { Suspense } from "react";
+import { ONBOARDING_QUESTIONS } from "@/lib/persona";
 
 function SpotifyPlaylistField({
   label,
@@ -162,6 +173,52 @@ function SettingsContent() {
         {saved && (
           <span className="text-sm text-[rgba(100,255,100,0.6)]">{saved}</span>
         )}
+      </div>
+
+      {/* Your Profile */}
+      <div className={sectionClass}>
+        <p className={labelClass}>Your Profile</p>
+        <p className="text-xs text-[var(--text-faint)] mb-4">
+          These help shape the tone of your devotionals.
+        </p>
+        {ONBOARDING_QUESTIONS.map((q) => {
+          const currentValue = settings.persona?.[q.key as keyof typeof settings.persona] || null;
+          return (
+            <div key={q.key} className="mb-6">
+              <p className="text-xs text-[var(--text-tertiary)] mb-2">{q.prompt}</p>
+              <div className="flex flex-wrap gap-2">
+                {q.options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => save({
+                      persona: { ...(settings.persona || {}), [q.key]: opt.value },
+                    } as unknown as Partial<Settings>)}
+                    className={`py-2 px-4 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer
+                      ${currentValue === opt.value
+                        ? "bg-[var(--surface-selected)] border border-[var(--surface-selected-border)] text-[var(--text-primary)]"
+                        : "bg-[var(--surface)] border border-[var(--surface-border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                      }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                {currentValue && (
+                  <button
+                    onClick={() => {
+                      const updated = { ...(settings.persona || {}) };
+                      delete (updated as Record<string, unknown>)[q.key];
+                      delete (updated as Record<string, unknown>)[q.detailKey];
+                      save({ persona: updated } as unknown as Partial<Settings>);
+                    }}
+                    className="py-2 px-3 rounded-xl text-xs text-[var(--text-ghost)] hover:text-[var(--text-tertiary)] transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Bible Translation */}
