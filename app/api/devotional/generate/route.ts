@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
 
         send("done", JSON.stringify(devotional));
       } catch (err) {
-        console.error("[devotional/generate] Generation failed:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error("[devotional/generate] Generation failed:", errMsg, err);
         send("error", "Failed to generate devotional. Please try again.");
       } finally {
         controller.close();
