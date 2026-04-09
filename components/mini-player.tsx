@@ -5,7 +5,7 @@ import { useMusicPlayer } from "@/lib/music-context";
 import { Toast } from "./toast";
 
 export function MiniPlayer() {
-  const { currentSong, playing, togglePlay, next, progress, showMiniPlayer, toastMessage, dismissToast } = useMusicPlayer();
+  const { currentSong, playing, started, togglePlay, next, progress, showMiniPlayer, toastMessage, dismissToast } = useMusicPlayer();
   const pathname = usePathname();
   const onWorshipPage = pathname === "/worship";
 
@@ -13,7 +13,7 @@ export function MiniPlayer() {
     <>
       {toastMessage && <Toast message={toastMessage} onDismiss={dismissToast} />}
 
-      {!onWorshipPage && (showMiniPlayer || playing) && currentSong && (
+      {!onWorshipPage && (showMiniPlayer || started) && currentSong && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
           {/* Progress bar on top edge */}
           <div className="h-[2px] bg-[rgba(255,255,255,0.04)]">
